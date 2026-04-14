@@ -143,10 +143,10 @@ The viewer expects a standard SpiderFoot JSON export — a top-level array of ev
 ```json
 [
   {
-    "data": "accountrecovery.wendys.com",
+    "data": "accounts.website.com",
     "event_type": "INTERNET_NAME",
     "module": "sfp_dnsresolve",
-    "source_data": "wendys.com",
+    "source_data": "website.com",
     "false_positive": 0,
     "last_seen": "2026-04-13 10:52:33",
     "scan_name": "my_scan",
