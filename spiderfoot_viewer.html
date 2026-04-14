@@ -1,0 +1,1641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpiderFoot OSINT Viewer</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #07090d;
+  --bg2:     #0b0f16;
+  --card:    #0e1520;
+  --border:  #1a2f44;
+  --border2: #243d56;
+  --accent:  #00d4ff;
+  --red:     #ff3e6c;
+  --green:   #2dff7a;
+  --warn:    #ffb700;
+  --purple:  #a78bfa;
+  --muted:   #2e4a62;
+  --text:    #c5d8ea;
+  --text2:   #5a7a96;
+  --text3:   #3a5670;
+  --mono:    'Share Tech Mono', monospace;
+  --sans:    'Barlow', sans-serif;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  background-image:
+    radial-gradient(ellipse 60% 40% at 15% 5%, rgba(0,212,255,.05) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 85% 95%, rgba(255,62,108,.04) 0%, transparent 60%);
+}
+
+/* ===================== LANDING ===================== */
+#landing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  text-align: center;
+  padding: 40px;
+}
+.landing-logo {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .2em;
+  color: var(--accent);
+  border: 1px solid rgba(0,212,255,.25);
+  padding: 6px 16px;
+  border-radius: 3px;
+  margin-bottom: 28px;
+  background: rgba(0,212,255,.04);
+}
+#landing h1 {
+  font-size: 36px;
+  font-weight: 700;
+  color: #e2eef8;
+  margin-bottom: 10px;
+  letter-spacing: -.01em;
+}
+#landing h1 span { color: var(--accent); }
+#landing p {
+  font-size: 15px;
+  color: var(--text2);
+  max-width: 480px;
+  margin-bottom: 40px;
+}
+.upload-zone {
+  width: 440px;
+  border: 2px dashed var(--border2);
+  border-radius: 10px;
+  padding: 44px 30px;
+  cursor: pointer;
+  transition: all .2s;
+  background: var(--card);
+  position: relative;
+}
+.upload-zone:hover, .upload-zone.dragover {
+  border-color: var(--accent);
+  background: rgba(0,212,255,.04);
+}
+.upload-zone .icon {
+  font-size: 36px;
+  margin-bottom: 14px;
+  opacity: .7;
+}
+.upload-zone .upload-text {
+  font-size: 15px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.upload-zone .upload-sub {
+  font-size: 12px;
+  color: var(--text2);
+  font-family: var(--mono);
+}
+.upload-zone input[type=file] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+.upload-btn {
+  margin-top: 22px;
+  display: inline-block;
+  background: var(--accent);
+  color: #000;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  padding: 10px 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+  transition: opacity .15s;
+  position: relative;
+}
+.upload-btn:hover { opacity: .85; }
+
+/* ===================== ERROR ===================== */
+#error-bar {
+  display: none;
+  background: rgba(255,62,108,.1);
+  border: 1px solid rgba(255,62,108,.3);
+  color: var(--red);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 10px 20px;
+  text-align: center;
+}
+
+/* ===================== DASHBOARD ===================== */
+#dashboard { display: none; }
+
+/* ---- Top Bar ---- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: rgba(7,9,13,.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  height: 54px;
+  gap: 16px;
+}
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+}
+.sf-badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: rgba(0,212,255,.08);
+  border: 1px solid rgba(0,212,255,.2);
+  color: var(--accent);
+  padding: 4px 10px;
+  border-radius: 3px;
+  letter-spacing: .08em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.scan-info {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text2);
+  letter-spacing: .05em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scan-info strong { color: var(--text); }
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.global-search {
+  background: rgba(0,0,0,.35);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 6px 12px;
+  width: 220px;
+  outline: none;
+  transition: border-color .2s;
+}
+.global-search:focus { border-color: var(--accent); }
+.global-search::placeholder { color: var(--muted); }
+
+.btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .06em;
+  padding: 6px 14px;
+  border-radius: 4px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.content-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+  border-color: rgba(255,255,255,.1);
+  color: var(--text2);
+  background: rgba(255,255,255,.04);
+}
+.btn-collapse:hover, .btn-expand:hover {
+  background: rgba(255,255,255,.08);
+  color: var(--text);
+  border-color: rgba(255,255,255,.2);
+}
+.btn-clear {
+  border-color: rgba(255,62,108,.35);
+  color: var(--red);
+  background: rgba(255,62,108,.06);
+}
+.btn-clear:hover { background: rgba(255,62,108,.14); border-color: var(--red); }
+.btn-load {
+  border-color: rgba(0,212,255,.3);
+  color: var(--accent);
+  background: rgba(0,212,255,.06);
+  position: relative;
+  overflow: hidden;
+}
+.btn-load:hover { background: rgba(0,212,255,.14); border-color: var(--accent); }
+.btn-load input[type=file] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---- Summary Strip ---- */
+.summary-strip {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  scrollbar-width: none;
+}
+.summary-strip::-webkit-scrollbar { display: none; }
+.stat-tile {
+  padding: 14px 22px;
+  border-right: 1px solid var(--border);
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background .15s;
+}
+.stat-tile:hover { background: rgba(0,212,255,.03); }
+.stat-tile .n {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: #e2eef8;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+.stat-tile .n.red { color: var(--red); }
+.stat-tile .n.warn { color: var(--warn); }
+.stat-tile .n.green { color: var(--green); }
+.stat-tile .n.purple { color: var(--purple); }
+.stat-tile .l {
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text2);
+  white-space: nowrap;
+}
+
+/* ---- Main layout ---- */
+.main-layout {
+  display: flex;
+  min-height: calc(100vh - 54px - 52px);
+}
+
+/* ---- Sidebar (event type nav) ---- */
+.sidebar {
+  width: 270px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: var(--bg2);
+  position: sticky;
+  top: 106px;
+  height: calc(100vh - 106px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); }
+
+.sidebar-search {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg2);
+  z-index: 10;
+}
+.sidebar-search input {
+  width: 100%;
+  background: rgba(0,0,0,.3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 10px;
+  outline: none;
+}
+.sidebar-search input:focus { border-color: var(--accent); }
+.sidebar-search input::placeholder { color: var(--muted); }
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(26,47,68,.4);
+  cursor: pointer;
+  transition: background .12s;
+  gap: 8px;
+}
+.nav-item:hover { background: rgba(0,212,255,.04); }
+.nav-item.active { background: rgba(0,212,255,.07); border-left: 2px solid var(--accent); padding-left: 12px; }
+.nav-item .et-name {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text2);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nav-item:hover .et-name, .nav-item.active .et-name { color: var(--text); }
+.nav-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.05);
+  color: var(--text2);
+  flex-shrink: 0;
+}
+.nav-item.active .nav-badge { background: rgba(0,212,255,.12); color: var(--accent); }
+.nav-badge.danger { background: rgba(255,62,108,.12); color: var(--red); }
+
+/* Filter +/- buttons */
+.nav-filters {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.nav-item:hover .nav-filters { opacity: 1; }
+.nav-item.f-include .nav-filters,
+.nav-item.f-exclude .nav-filters { opacity: 1; }
+.fbtn {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  border: 1px solid var(--border2);
+  background: rgba(0,0,0,.3);
+  color: var(--text3);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .12s;
+  font-family: var(--mono);
+  flex-shrink: 0;
+}
+.fbtn:hover { border-color: var(--text2); color: var(--text); }
+.fbtn.inc { border-color: rgba(45,255,122,.5); color: var(--green); background: rgba(45,255,122,.1); }
+.fbtn.exc { border-color: rgba(255,62,108,.5); color: var(--red); background: rgba(255,62,108,.1); }
+
+/* Sidebar state indicators */
+.nav-item.f-include { background: rgba(45,255,122,.04); border-left: 2px solid var(--green); padding-left: 12px; }
+.nav-item.f-exclude { background: rgba(255,62,108,.04); border-left: 2px solid var(--red); padding-left: 12px; opacity: .6; }
+
+/* Sidebar filter bar */
+.sidebar-filter-bar {
+  display: none;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0,0,0,.2);
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sidebar-filter-bar.active { display: flex; }
+.filter-summary {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text2);
+}
+.filter-summary .inc-count { color: var(--green); }
+.filter-summary .exc-count { color: var(--red); }
+.clear-filters-btn {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--warn);
+  cursor: pointer;
+  border: 1px solid rgba(255,183,0,.25);
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: rgba(255,183,0,.06);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.clear-filters-btn:hover { background: rgba(255,183,0,.14); }
+
+/* Export dropdown */
+.export-wrap { position: relative; }
+.btn-export {
+  border-color: rgba(167,139,250,.3);
+  color: var(--purple);
+  background: rgba(167,139,250,.06);
+}
+.btn-export:hover { background: rgba(167,139,250,.14); border-color: var(--purple); }
+.export-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  overflow: hidden;
+  min-width: 180px;
+  z-index: 300;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+}
+.export-wrap.open .export-menu { display: block; }
+.export-opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text2);
+  border-bottom: 1px solid var(--border);
+  transition: background .12s;
+}
+.export-opt:last-child { border-bottom: none; }
+.export-opt:hover { background: rgba(0,212,255,.06); color: var(--text); }
+.export-opt .eicon { font-size: 14px; }
+.export-opt .edesc { font-size: 9px; color: var(--text3); margin-top: 1px; }
+
+/* ---- Content area ---- */
+.content {
+  flex: 1;
+  min-width: 0;
+  padding: 24px 80px;
+}
+
+/* ---- Section card ---- */
+.et-section {
+  margin-bottom: 24px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--card);
+}
+.et-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0,0,0,.25);
+  cursor: pointer;
+  user-select: none;
+  gap: 12px;
+}
+.et-header:hover { background: rgba(0,0,0,.35); }
+.et-title-wrap { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.et-type-badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: var(--accent);
+  background: rgba(0,212,255,.08);
+  border: 1px solid rgba(0,212,255,.2);
+  padding: 3px 10px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.et-type-badge.danger { color: var(--red); background: rgba(255,62,108,.08); border-color: rgba(255,62,108,.2); }
+.et-type-badge.warn { color: var(--warn); background: rgba(255,183,0,.08); border-color: rgba(255,183,0,.2); }
+.et-type-badge.green { color: var(--green); background: rgba(45,255,122,.08); border-color: rgba(45,255,122,.2); }
+.et-type-badge.purple { color: var(--purple); background: rgba(167,139,250,.08); border-color: rgba(167,139,250,.2); }
+
+.et-count {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text2);
+}
+.et-header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.collapse-icon {
+  font-size: 10px;
+  color: var(--text3);
+  transition: transform .2s;
+  width: 14px;
+  text-align: center;
+}
+.et-section.collapsed .collapse-icon { transform: rotate(-90deg); }
+.et-body { display: block; }
+.et-section.collapsed .et-body { display: none; }
+
+/* Section search */
+.section-search {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0,0,0,.1);
+}
+.section-search input {
+  width: 100%;
+  background: rgba(0,0,0,.25);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 5px 10px;
+  outline: none;
+}
+.section-search input:focus { border-color: var(--accent); }
+.section-search input::placeholder { color: var(--muted); }
+
+/* ---- Event rows ---- */
+.event-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.event-table thead tr {
+  background: rgba(0,0,0,.25);
+  border-bottom: 1px solid var(--border);
+}
+.event-table thead th {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text2);
+  padding: 8px 14px;
+  text-align: left;
+  white-space: nowrap;
+  font-weight: 400;
+}
+.event-table tbody tr {
+  border-bottom: 1px solid rgba(26,47,68,.4);
+  transition: background .1s;
+}
+.event-table tbody tr:last-child { border-bottom: none; }
+.event-table tbody tr:hover { background: rgba(0,212,255,.025); }
+.event-table tbody tr.fp-row { background: rgba(255,183,0,.04); }
+.event-table tbody tr.hidden { display: none; }
+
+.event-table td {
+  padding: 9px 14px;
+  vertical-align: top;
+  font-size: 13px;
+}
+
+/* Data cell */
+.td-data {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+  max-width: 380px;
+  word-break: break-all;
+}
+.td-data.long { max-width: 480px; }
+.data-short { }
+.data-full { display: none; white-space: pre-wrap; }
+.expand-btn {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--accent);
+  cursor: pointer;
+  font-family: var(--mono);
+  letter-spacing: .04em;
+  opacity: .7;
+}
+.expand-btn:hover { opacity: 1; }
+
+/* Source data cell */
+.td-source {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text2);
+  max-width: 240px;
+  word-break: break-all;
+}
+.td-source .src-short {}
+.td-source .src-full { display: none; white-space: pre-wrap; }
+
+/* Module cell */
+.td-module {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+/* FP cell */
+.td-fp {
+  font-family: var(--mono);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.fp-yes { color: var(--warn); }
+.fp-no { color: var(--text3); }
+
+/* Last seen cell */
+.td-date {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  white-space: nowrap;
+}
+
+/* URL detection */
+.td-data a { color: var(--accent); text-decoration: none; }
+.td-data a:hover { text-decoration: underline; }
+
+/* Row count footer */
+.et-footer {
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  background: rgba(0,0,0,.15);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+}
+
+/* ---- Scrollable table wrapper ---- */
+.table-scroll {
+  overflow-x: auto;
+  max-height: 640px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.table-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+.table-scroll::-webkit-scrollbar-thumb { background: var(--border); }
+
+/* Sticky thead */
+.event-table thead { position: sticky; top: 0; z-index: 5; }
+
+/* ---- Color coding map ---- */
+/* defined in JS */
+
+/* Misc */
+.no-results {
+  padding: 20px 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text3);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.et-section { animation: fadeIn .3s ease both; }
+
+</style>
+</head>
+<body>
+
+<!-- ========== LANDING ========== -->
+<div id="landing">
+  <div class="landing-logo">SPIDERFOOT OSINT VIEWER</div>
+  <h1>Load <span>SpiderFoot</span> JSON</h1>
+  <p>Drop your SpiderFoot scan export (.json) to visualize all events, grouped by type, with full field display.</p>
+  <div class="upload-zone" id="dropZone">
+    <div class="icon">📡</div>
+    <div class="upload-text">Drop JSON file here</div>
+    <div class="upload-sub">or click to browse</div>
+    <input type="file" id="fileInputLanding" accept=".json,application/json">
+  </div>
+</div>
+
+<!-- ========== ERROR BAR ========== -->
+<div id="error-bar"></div>
+
+<!-- ========== DASHBOARD ========== -->
+<div id="dashboard">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="sf-badge">SPIDERFOOT</span>
+      <span class="scan-info" id="scanInfo">—</span>
+    </div>
+    <div class="topbar-right">
+      <input type="text" class="global-search" id="globalSearch" placeholder="Global search…" oninput="globalFilter(this.value)">
+      <div class="export-wrap" id="exportWrap">
+        <button class="btn btn-export" onclick="toggleExportMenu()">⬇ Export</button>
+        <div class="export-menu">
+          <div class="export-opt" onclick="exportCSV()">
+            <span class="eicon">📄</span>
+            <div><div>Export CSV</div><div class="edesc">Visible rows · all fields</div></div>
+          </div>
+          <div class="export-opt" onclick="exportReport()">
+            <span class="eicon">📋</span>
+            <div><div>Export Report</div><div class="edesc">Full HTML report · new tab</div></div>
+          </div>
+        </div>
+      </div>
+      <label class="btn btn-load">
+        ⬆ Load New JSON
+        <input type="file" id="fileInputTop" accept=".json,application/json">
+      </label>
+      <button class="btn btn-clear" onclick="clearAll()">✕ Clear</button>
+    </div>
+  </div>
+
+  <!-- Summary strip -->
+  <div class="summary-strip" id="summaryStrip"></div>
+
+  <!-- Main -->
+  <div class="main-layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-search">
+        <input type="text" id="sidebarSearch" placeholder="Filter event types…" oninput="filterSidebar(this.value)">
+      </div>
+      <div class="sidebar-filter-bar" id="sidebarFilterBar">
+        <span class="filter-summary" id="filterSummary"></span>
+        <span class="clear-filters-btn" onclick="clearFilters()">✕ Clear</span>
+      </div>
+      <div id="navList"></div>
+    </div>
+    <!-- Content -->
+    <div class="content" id="content">
+      <div class="content-toolbar">
+        <button class="btn btn-collapse" onclick="collapseAll()">⊟ Collapse All</button>
+        <button class="btn btn-expand" onclick="expandAll()">⊞ Expand All</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// close export menu when clicking outside
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('exportWrap');
+  if (wrap && !wrap.contains(e.target)) wrap.classList.remove('open');
+});
+
+// ============================================================
+//  CONSTANTS
+// ============================================================
+const DANGER_TYPES = new Set([
+  'BLACKLISTED_INTERNET_NAME','MALICIOUS_INTERNET_NAME',
+  'BLACKLISTED_COHOST','MALICIOUS_COHOST',
+  'BLACKLISTED_AFFILIATE_INTERNET_NAME','MALICIOUS_AFFILIATE_INTERNET_NAME',
+  'BLACKLISTED_IPADDR','MALICIOUS_IPADDR',
+  'CLOUD_STORAGE_BUCKET_OPEN',
+]);
+const WARN_TYPES = new Set([
+  'CLOUD_STORAGE_BUCKET','INTERNET_NAME_UNRESOLVED',
+  'AFFILIATE_INTERNET_NAME_UNRESOLVED',
+]);
+const GREEN_TYPES = new Set([
+  'INTERNET_NAME','DOMAIN_NAME','DOMAIN_NAME_PARENT',
+  'AFFILIATE_INTERNET_NAME','CO_HOSTED_SITE',
+]);
+const PURPLE_TYPES = new Set([
+  'EMAILADDR','HUMAN_NAME','PHONE_NUMBER','USERNAME',
+  'SOCIAL_MEDIA','PHYSICAL_ADDRESS','PHYSICAL_COORDINATES',
+]);
+
+function typeColor(et) {
+  if (DANGER_TYPES.has(et)) return 'danger';
+  if (WARN_TYPES.has(et))   return 'warn';
+  if (GREEN_TYPES.has(et))  return 'green';
+  if (PURPLE_TYPES.has(et)) return 'purple';
+  return '';
+}
+
+// ============================================================
+//  STATE
+// ============================================================
+let scanData = [];
+let groupedData = {};
+let eventTypes = [];
+let filterState = {}; // et -> 'include' | 'exclude' | null
+
+// ============================================================
+//  FILE LOADING
+// ============================================================
+function setupFileInputs() {
+  document.getElementById('fileInputLanding').addEventListener('change', e => handleFile(e.target.files[0]));
+  document.getElementById('fileInputTop').addEventListener('change', e => handleFile(e.target.files[0]));
+
+  const dz = document.getElementById('dropZone');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault();
+    dz.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  });
+}
+
+function handleFile(file) {
+  if (!file) return;
+  if (!file.name.endsWith('.json') && file.type !== 'application/json') {
+    showError('Please select a valid SpiderFoot JSON file.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const raw = JSON.parse(e.target.result);
+      if (!Array.isArray(raw)) throw new Error('Expected a JSON array at top level.');
+      if (!raw[0] || !raw[0].event_type) throw new Error('Does not look like a SpiderFoot export (missing event_type field).');
+      loadScan(raw);
+    } catch(err) {
+      showError('JSON parse error: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function showError(msg) {
+  const bar = document.getElementById('error-bar');
+  bar.textContent = '⚠ ' + msg;
+  bar.style.display = 'block';
+  setTimeout(() => bar.style.display = 'none', 6000);
+}
+
+// ============================================================
+//  CLEAR
+// ============================================================
+function clearAll() {
+  scanData = [];
+  groupedData = {};
+  eventTypes = [];
+  filterState = {};
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('landing').style.display = 'flex';
+  document.getElementById('globalSearch').value = '';
+  document.getElementById('sidebarSearch').value = '';
+  document.getElementById('fileInputLanding').value = '';
+  document.getElementById('fileInputTop').value = '';
+}
+
+// ============================================================
+//  LOAD SCAN
+// ============================================================
+function loadScan(raw) {
+  filterState = {};
+  scanData = raw;
+
+  // Group by event_type
+  groupedData = {};
+  for (const row of raw) {
+    if (!groupedData[row.event_type]) groupedData[row.event_type] = [];
+    groupedData[row.event_type].push(row);
+  }
+  // Sort event types by count desc
+  eventTypes = Object.keys(groupedData).sort((a,b) => groupedData[b].length - groupedData[a].length);
+
+  // Render
+  renderSummary();
+  renderSidebar();
+  renderContent();
+
+  // Set scan info
+  const first = raw[0];
+  document.getElementById('scanInfo').innerHTML =
+    `SCAN: <strong>${first.scan_name || '—'}</strong> &nbsp;|&nbsp; TARGET: <strong>${first.scan_target || '—'}</strong> &nbsp;|&nbsp; EVENTS: <strong>${raw.length.toLocaleString()}</strong> &nbsp;|&nbsp; TYPES: <strong>${eventTypes.length}</strong>`;
+
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+}
+
+// ============================================================
+//  SUMMARY STRIP
+// ============================================================
+function renderSummary() {
+  const strip = document.getElementById('summaryStrip');
+  strip.innerHTML = '';
+
+  const totalFP = scanData.filter(r => r.false_positive).length;
+
+  // Fixed tiles
+  const fixed = [
+    { n: scanData.length.toLocaleString(), l: 'Total Events', cls: '', anchor: null },
+    { n: eventTypes.length, l: 'Event Types', cls: '', anchor: null },
+  ];
+
+  // Per-type interesting counts
+  const interesting = [
+    { types: ['INTERNET_NAME'], l: 'Hostnames', cls: 'green' },
+    { types: ['EMAILADDR'], l: 'Emails', cls: '' },
+    { types: ['HUMAN_NAME'], l: 'People', cls: 'purple' },
+    { types: ['PHONE_NUMBER'], l: 'Phones', cls: '' },
+    { types: ['SOCIAL_MEDIA'], l: 'Social', cls: '' },
+    { types: ['CLOUD_STORAGE_BUCKET_OPEN'], l: 'Open Buckets', cls: 'warn' },
+    { types: ['BLACKLISTED_INTERNET_NAME','MALICIOUS_INTERNET_NAME'], l: 'Flagged Hosts', cls: 'red' },
+    { types: ['PUBLIC_CODE_REPO'], l: 'Code Repos', cls: '' },
+    { types: ['LINKED_URL_INTERNAL','LINKED_URL_EXTERNAL'], l: 'URLs', cls: '' },
+    { types: ['EMAILADDR','PHONE_NUMBER','HUMAN_NAME','USERNAME','SOCIAL_MEDIA'], l: 'PII Records', cls: 'purple' },
+  ];
+
+  for (const t of fixed) {
+    const tile = document.createElement('div');
+    tile.className = 'stat-tile';
+    tile.innerHTML = `<div class="n ${t.cls}">${t.n}</div><div class="l">${t.l}</div>`;
+    if (t.anchor) tile.onclick = () => scrollToSection(t.anchor);
+    strip.appendChild(tile);
+  }
+
+  for (const t of interesting) {
+    const count = t.types.reduce((s, type) => s + (groupedData[type] ? groupedData[type].length : 0), 0);
+    if (!count) continue;
+    const tile = document.createElement('div');
+    tile.className = 'stat-tile';
+    tile.innerHTML = `<div class="n ${t.cls}">${count.toLocaleString()}</div><div class="l">${t.l}</div>`;
+    // Click scrolls to first matching section
+    tile.onclick = () => { const sec = document.getElementById('sec-' + t.types[0]); if (sec) sec.scrollIntoView({behavior:'smooth'}); };
+    strip.appendChild(tile);
+  }
+
+  if (totalFP > 0) {
+    const tile = document.createElement('div');
+    tile.className = 'stat-tile';
+    tile.innerHTML = `<div class="n warn">${totalFP}</div><div class="l">False Positives</div>`;
+    strip.appendChild(tile);
+  }
+}
+
+// ============================================================
+//  SIDEBAR
+// ============================================================
+function renderSidebar() {
+  const nav = document.getElementById('navList');
+  nav.innerHTML = '';
+
+  for (const et of eventTypes) {
+    const count = groupedData[et].length;
+    const badgeCls = DANGER_TYPES.has(et) ? 'danger' : '';
+    const item = document.createElement('div');
+    item.className = 'nav-item';
+    item.dataset.et = et;
+    item.innerHTML = `
+      <div class="nav-filters">
+        <button class="fbtn" data-et="${et}" data-action="include" title="Include only">+</button>
+        <button class="fbtn" data-et="${et}" data-action="exclude" title="Exclude">−</button>
+      </div>
+      <span class="et-name" title="${et}">${et}</span>
+      <span class="nav-badge ${badgeCls}">${count}</span>`;
+
+    // Nav click (not on filter buttons) = scroll
+    item.addEventListener('click', e => {
+      if (e.target.closest('.fbtn')) return;
+      scrollToSection(et);
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      item.classList.add('active');
+    });
+
+    // Filter buttons
+    item.querySelectorAll('.fbtn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const action = btn.dataset.action; // 'include' | 'exclude'
+        const current = filterState[et];
+        if (current === action) {
+          delete filterState[et]; // toggle off
+        } else {
+          filterState[et] = action;
+        }
+        applyFilters();
+      });
+    });
+
+    nav.appendChild(item);
+  }
+}
+
+// ============================================================
+//  APPLY FILTERS
+// ============================================================
+function applyFilters() {
+  const included = Object.keys(filterState).filter(et => filterState[et] === 'include');
+  const excluded = Object.keys(filterState).filter(et => filterState[et] === 'exclude');
+
+  // Update nav item classes
+  document.querySelectorAll('.nav-item').forEach(item => {
+    const et = item.dataset.et;
+    item.classList.remove('f-include', 'f-exclude');
+    const incBtn = item.querySelector('.fbtn[data-action="include"]');
+    const excBtn = item.querySelector('.fbtn[data-action="exclude"]');
+    if (filterState[et] === 'include') {
+      item.classList.add('f-include');
+      incBtn && incBtn.classList.add('inc');
+      excBtn && excBtn.classList.remove('exc');
+    } else if (filterState[et] === 'exclude') {
+      item.classList.add('f-exclude');
+      excBtn && excBtn.classList.add('exc');
+      incBtn && incBtn.classList.remove('inc');
+    } else {
+      incBtn && incBtn.classList.remove('inc');
+      excBtn && excBtn.classList.remove('exc');
+    }
+  });
+
+  // Show/hide sections
+  for (const et of eventTypes) {
+    const section = document.getElementById('sec-' + et);
+    if (!section) continue;
+    let visible = true;
+    if (included.length > 0 && !included.includes(et)) visible = false;
+    if (excluded.includes(et)) visible = false;
+    section.style.display = visible ? '' : 'none';
+  }
+
+  // Update sidebar filter bar
+  const bar = document.getElementById('sidebarFilterBar');
+  const summary = document.getElementById('filterSummary');
+  if (included.length === 0 && excluded.length === 0) {
+    bar.classList.remove('active');
+  } else {
+    bar.classList.add('active');
+    const parts = [];
+    if (included.length) parts.push(`<span class="inc-count">+${included.length} included</span>`);
+    if (excluded.length) parts.push(`<span class="exc-count">−${excluded.length} excluded</span>`);
+    summary.innerHTML = parts.join(' &nbsp; ');
+  }
+}
+
+function clearFilters() {
+  filterState = {};
+  applyFilters();
+}
+
+function filterSidebar(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.style.display = item.dataset.et.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+// ============================================================
+//  EXPORT — TOGGLE MENU
+// ============================================================
+function toggleExportMenu() {
+  document.getElementById('exportWrap').classList.toggle('open');
+}
+
+// ============================================================
+//  EXPORT — CSV
+// ============================================================
+function exportCSV() {
+  document.getElementById('exportWrap').classList.remove('open');
+  const cols = ['event_type','data','source_data','module','false_positive','last_seen','scan_name','scan_target'];
+  const rows = [cols];
+
+  for (const et of eventTypes) {
+    const section = document.getElementById('sec-' + et);
+    if (section && section.style.display === 'none') continue; // filtered out section
+    const tbody = document.getElementById('tbody-' + et);
+    if (!tbody) continue;
+    const visibleTrs = [...tbody.querySelectorAll('tr')].filter(tr => !tr.classList.contains('hidden'));
+    const etRows = groupedData[et] || [];
+    // Map visible rows back to data (by index stored in first td)
+    visibleTrs.forEach(tr => {
+      const idx = parseInt(tr.cells[0]?.textContent, 10) - 1;
+      const row = etRows[idx];
+      if (!row) return;
+      rows.push(cols.map(c => {
+        const val = String(row[c] ?? '').replace(/\r\n/g,' ').replace(/\n/g,' ').replace(/\r/g,' ');
+        return `"${val.replace(/"/g, '""')}"`;
+      }));
+    });
+  }
+
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const target = scanData[0]?.scan_target || 'spiderfoot';
+  a.href = url;
+  a.download = `spiderfoot_${target}_${timestamp()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ============================================================
+//  EXPORT — HTML REPORT
+// ============================================================
+function exportReport() {
+  document.getElementById('exportWrap').classList.remove('open');
+  const target = scanData[0]?.scan_target || '—';
+  const scanName = scanData[0]?.scan_name || '—';
+  const now = new Date().toLocaleString();
+
+  // Collect visible data grouped by type
+  let sections = '';
+  let totalVisible = 0;
+  const visibleTypes = [];
+
+  for (const et of eventTypes) {
+    const section = document.getElementById('sec-' + et);
+    if (section && section.style.display === 'none') continue;
+    const tbody = document.getElementById('tbody-' + et);
+    if (!tbody) continue;
+    const visibleTrs = [...tbody.querySelectorAll('tr')].filter(tr => !tr.classList.contains('hidden'));
+    if (visibleTrs.length === 0) continue;
+
+    const etRows = groupedData[et] || [];
+    const dataRows = visibleTrs.map(tr => {
+      const idx = parseInt(tr.cells[0]?.textContent, 10) - 1;
+      return etRows[idx];
+    }).filter(Boolean);
+
+    totalVisible += dataRows.length;
+    visibleTypes.push({ et, count: dataRows.length });
+
+    const rowsHtml = dataRows.map((row, i) => `
+      <tr${row.false_positive ? ' class="fp-row"' : ''}>
+        <td>${i + 1}</td>
+        <td class="mono">${esc(row.data)}</td>
+        <td class="mono src">${esc(row.source_data)}</td>
+        <td class="mono dim">${esc(row.module)}</td>
+        <td class="mono dim">${row.false_positive ? '<span class="fp-yes">YES</span>' : '<span class="fp-no">no</span>'}</td>
+        <td class="mono dim">${esc(row.last_seen)}</td>
+      </tr>`).join('');
+
+    sections += `
+      <div class="section">
+        <div class="sec-head"><span class="et-badge ${typeColor(et)}">${esc(et)}</span> <span class="cnt">${dataRows.length.toLocaleString()} events</span></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Data</th><th>Source Data</th><th>Module</th><th>False Positive</th><th>Last Seen</th></tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
+  const toc = visibleTypes.map(({et, count}) =>
+    `<a href="#et-${et.replace(/_/g,'-')}">${et} <span>(${count})</span></a>`
+  ).join('');
+
+  const html = `<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8">
+<title>SpiderFoot Report — ${esc(target)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07090d; --bg2: #0b0f16; --card: #0e1520;
+    --border: #1a2f44; --border2: #243d56;
+    --accent: #00d4ff; --red: #ff3e6c; --green: #2dff7a;
+    --warn: #ffb700; --purple: #a78bfa;
+    --text: #c5d8ea; --text2: #5a7a96; --text3: #3a5670;
+    --mono: 'Share Tech Mono', monospace; --sans: 'Barlow', sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px;
+    background-image: radial-gradient(ellipse 60% 40% at 15% 5%, rgba(0,212,255,.04) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 85% 95%, rgba(255,62,108,.03) 0%, transparent 60%); }
+
+  .report-header {
+    background: rgba(7,9,13,.95);
+    border-bottom: 1px solid var(--border);
+    padding: 22px 80px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  .rh-left { display: flex; align-items: center; gap: 14px; }
+  .sf-badge { font-family: var(--mono); font-size: 11px; background: rgba(0,212,255,.08);
+    border: 1px solid rgba(0,212,255,.2); color: var(--accent); padding: 4px 10px;
+    border-radius: 3px; letter-spacing: .08em; }
+  .rh-title { font-size: 15px; font-weight: 600; color: #e2eef8; }
+  .rh-title span { color: var(--accent); }
+  .rh-meta { font-family: var(--mono); font-size: 10px; color: var(--text2); margin-top: 3px; letter-spacing: .04em; }
+  .rh-right { font-family: var(--mono); font-size: 11px; color: var(--text2); text-align: right; }
+
+  .toc-bar { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 10px 80px;
+    display: flex; flex-wrap: wrap; gap: 5px; overflow-x: auto; }
+  .toc-bar a { font-family: var(--mono); font-size: 10px; color: var(--text2); text-decoration: none;
+    background: var(--card); border: 1px solid var(--border); padding: 3px 9px;
+    border-radius: 3px; transition: all .15s; white-space: nowrap; }
+  .toc-bar a span { color: var(--text3); }
+  .toc-bar a:hover { border-color: var(--accent); color: var(--accent); }
+
+  .content { padding: 24px 80px; }
+
+  .section { margin-bottom: 20px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--card); }
+  .sec-head { display: flex; align-items: center; gap: 10px; padding: 11px 16px;
+    background: rgba(0,0,0,.25); border-bottom: 1px solid var(--border); }
+  .et-badge { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: .06em;
+    color: var(--accent); background: rgba(0,212,255,.08); border: 1px solid rgba(0,212,255,.2);
+    padding: 3px 10px; border-radius: 3px; }
+  .et-badge.danger { color: var(--red); background: rgba(255,62,108,.08); border-color: rgba(255,62,108,.2); }
+  .et-badge.warn { color: var(--warn); background: rgba(255,183,0,.08); border-color: rgba(255,183,0,.2); }
+  .et-badge.green { color: var(--green); background: rgba(45,255,122,.08); border-color: rgba(45,255,122,.2); }
+  .et-badge.purple { color: var(--purple); background: rgba(167,139,250,.08); border-color: rgba(167,139,250,.2); }
+  .cnt { font-family: var(--mono); font-size: 11px; color: var(--text2); }
+
+  .tbl-wrap { overflow-x: auto; max-height: 600px; overflow-y: auto;
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  .tbl-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
+  .tbl-wrap::-webkit-scrollbar-thumb { background: var(--border); }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead { position: sticky; top: 0; z-index: 5; background: rgba(0,0,0,.4); }
+  th { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--text2); padding: 8px 14px; text-align: left; border-bottom: 1px solid var(--border);
+    white-space: nowrap; font-weight: 400; }
+  td { padding: 8px 14px; border-bottom: 1px solid rgba(26,47,68,.4); vertical-align: top; font-size: 12px; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(0,212,255,.025); }
+  tr.fp-row td { background: rgba(255,183,0,.04); }
+  td:first-child { font-family: var(--mono); font-size: 10px; color: var(--text3); white-space: nowrap; }
+  .mono { font-family: var(--mono); font-size: 11px; color: var(--text); word-break: break-all; }
+  .src { color: var(--text2); max-width: 280px; }
+  .dim { color: var(--text3); }
+  .fp-yes { color: var(--warn); font-weight: bold; }
+  .fp-no { color: var(--text3); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  @media print {
+    .tbl-wrap { max-height: none; overflow: visible; }
+    .report-header { position: static; }
+  }
+</style>
+</head><body>
+
+<div class="report-header">
+  <div class="rh-left">
+    <span class="sf-badge">SPIDERFOOT</span>
+    <div>
+      <div class="rh-title">OSINT Report — <span>${esc(target)}</span></div>
+      <div class="rh-meta">SCAN: ${esc(scanName)} &nbsp;|&nbsp; ${totalVisible.toLocaleString()} visible events of ${scanData.length.toLocaleString()} total &nbsp;|&nbsp; ${visibleTypes.length} event types</div>
+    </div>
+  </div>
+  <div class="rh-right">Generated<br>${esc(now)}</div>
+</div>
+
+<div class="toc-bar">${toc}</div>
+
+<div class="content">
+  ${visibleTypes.map(({et}) => `<a id="et-${et.replace(/_/g,'-')}"></a>`).join('')}
+  ${sections}
+</div>
+</body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
+}
+
+function esc(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function timestamp() {
+  return new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+}
+
+
+function scrollToSection(et) {
+  const el = document.getElementById('sec-' + et);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Expand if collapsed
+    el.classList.remove('collapsed');
+  }
+}
+
+// ============================================================
+//  CONTENT
+// ============================================================
+function renderContent() {
+  const content = document.getElementById('content');
+  // Remove old sections but keep the toolbar
+  content.querySelectorAll('.et-section').forEach(s => s.remove());
+
+  for (const et of eventTypes) {
+    const rows = groupedData[et];
+    const color = typeColor(et);
+    const section = document.createElement('div');
+    section.className = 'et-section';
+    section.id = 'sec-' + et;
+
+    // Determine if collapsed by default (large raw data sections)
+    const bigRaw = ['SSL_CERTIFICATE_RAW','RAW_RIR_DATA','RAW_DNS_RECORDS','SEARCH_ENGINE_WEB_CONTENT','AFFILIATE_DOMAIN_WHOIS','CO_HOSTED_SITE_DOMAIN_WHOIS','DOMAIN_WHOIS'].includes(et);
+    if (bigRaw) section.classList.add('collapsed');
+
+    section.innerHTML = `
+      <div class="et-header" onclick="toggleSection(this)">
+        <div class="et-title-wrap">
+          <span class="et-type-badge ${color}">${et}</span>
+          <span class="et-count">${rows.length.toLocaleString()} event${rows.length !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="et-header-right">
+          ${bigRaw ? '<span style="font-family:var(--mono);font-size:10px;color:var(--text3);">click to expand</span>' : ''}
+          <span class="collapse-icon">▼</span>
+        </div>
+      </div>
+      <div class="et-body">
+        <div class="section-search">
+          <input type="text" placeholder="Filter within ${et}…" oninput="filterSection(this, '${et}')">
+        </div>
+        <div class="table-scroll">
+          <table class="event-table" id="tbl-${et}">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Data</th>
+                <th>Source Data</th>
+                <th>Module</th>
+                <th>False Positive</th>
+                <th>Last Seen</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-${et}"></tbody>
+          </table>
+        </div>
+        <div class="et-footer" id="footer-${et}">Showing ${rows.length.toLocaleString()} of ${rows.length.toLocaleString()} rows</div>
+      </div>`;
+
+    content.appendChild(section);
+
+    // Populate tbody
+    const tbody = section.querySelector(`#tbody-${et}`);
+    rows.forEach((row, i) => {
+      const tr = buildRow(row, i + 1, et);
+      tbody.appendChild(tr);
+    });
+  }
+}
+
+// ============================================================
+//  BUILD ROW
+// ============================================================
+const URL_RE = /^https?:\/\/\S+/i;
+const LONG_THRESH = 200; // chars before we offer expand
+
+function buildRow(row, idx, et) {
+  const tr = document.createElement('tr');
+  if (row.false_positive) tr.classList.add('fp-row');
+
+  // Index
+  const tdIdx = document.createElement('td');
+  tdIdx.style.color = 'var(--text3)';
+  tdIdx.style.fontFamily = 'var(--mono)';
+  tdIdx.style.fontSize = '10px';
+  tdIdx.style.whiteSpace = 'nowrap';
+  tdIdx.textContent = idx;
+  tr.appendChild(tdIdx);
+
+  // Data
+  const tdData = document.createElement('td');
+  tdData.className = 'td-data';
+  const dataStr = String(row.data || '');
+  tdData.appendChild(renderDataCell(dataStr));
+  tr.appendChild(tdData);
+
+  // Source Data
+  const tdSrc = document.createElement('td');
+  tdSrc.className = 'td-source';
+  const srcStr = String(row.source_data || '');
+  if (srcStr.length > LONG_THRESH) {
+    const short = document.createElement('span');
+    short.className = 'src-short';
+    short.textContent = srcStr.slice(0, LONG_THRESH) + '…';
+    const full = document.createElement('span');
+    full.className = 'src-full';
+    full.textContent = srcStr;
+    const btn = document.createElement('span');
+    btn.className = 'expand-btn';
+    btn.textContent = '[expand source]';
+    btn.onclick = function() {
+      const isOpen = full.style.display === 'inline';
+      full.style.display = isOpen ? 'none' : 'inline';
+      short.style.display = isOpen ? 'inline' : 'none';
+      btn.textContent = isOpen ? '[expand source]' : '[collapse]';
+    };
+    tdSrc.appendChild(short);
+    tdSrc.appendChild(full);
+    tdSrc.appendChild(document.createElement('br'));
+    tdSrc.appendChild(btn);
+  } else {
+    tdSrc.textContent = srcStr;
+  }
+  tr.appendChild(tdSrc);
+
+  // Module
+  const tdMod = document.createElement('td');
+  tdMod.className = 'td-module';
+  tdMod.textContent = row.module || '';
+  tr.appendChild(tdMod);
+
+  // False Positive
+  const tdFP = document.createElement('td');
+  tdFP.className = 'td-fp';
+  if (row.false_positive) {
+    tdFP.innerHTML = '<span class="fp-yes">YES</span>';
+  } else {
+    tdFP.innerHTML = '<span class="fp-no">no</span>';
+  }
+  tr.appendChild(tdFP);
+
+  // Last Seen
+  const tdDate = document.createElement('td');
+  tdDate.className = 'td-date';
+  tdDate.textContent = row.last_seen || '';
+  tr.appendChild(tdDate);
+
+  return tr;
+}
+
+function renderDataCell(dataStr) {
+  const frag = document.createDocumentFragment();
+
+  // Check if it's a URL
+  if (URL_RE.test(dataStr.trim()) && dataStr.trim().split(/\s/).length === 1) {
+    const a = document.createElement('a');
+    a.href = dataStr.trim();
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = dataStr.trim();
+    frag.appendChild(a);
+    return frag;
+  }
+
+  // Multi-line / long content
+  if (dataStr.length > LONG_THRESH || dataStr.includes('\n') || dataStr.includes('\r')) {
+    const preview = dataStr.replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim();
+    const firstLine = preview.split('\n')[0].slice(0, LONG_THRESH);
+
+    const short = document.createElement('span');
+    short.className = 'data-short';
+    short.textContent = firstLine + (firstLine.length < preview.length ? '…' : '');
+
+    const full = document.createElement('pre');
+    full.className = 'data-full';
+    full.style.cssText = 'font-family:var(--mono);font-size:10px;color:var(--text2);white-space:pre-wrap;word-break:break-all;margin-top:6px;';
+    full.textContent = preview;
+
+    const btn = document.createElement('span');
+    btn.className = 'expand-btn';
+    btn.textContent = '[expand]';
+    btn.onclick = function() {
+      const isOpen = full.style.display === 'block';
+      full.style.display = isOpen ? 'none' : 'block';
+      short.style.display = isOpen ? 'inline' : 'none';
+      btn.textContent = isOpen ? '[expand]' : '[collapse]';
+    };
+
+    frag.appendChild(short);
+    frag.appendChild(full);
+    frag.appendChild(document.createElement('br'));
+    frag.appendChild(btn);
+    return frag;
+  }
+
+  // Short plain text — check for URLs embedded
+  if (URL_RE.test(dataStr)) {
+    const a = document.createElement('a');
+    a.href = dataStr;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = dataStr;
+    frag.appendChild(a);
+  } else {
+    frag.appendChild(document.createTextNode(dataStr));
+  }
+  return frag;
+}
+
+// ============================================================
+//  TOGGLE SECTION COLLAPSE
+// ============================================================
+function toggleSection(header) {
+  const section = header.closest('.et-section');
+  section.classList.toggle('collapsed');
+}
+
+// ============================================================
+//  FILTER WITHIN SECTION
+// ============================================================
+function filterSection(input, et) {
+  const q = input.value.toLowerCase();
+  const tbody = document.getElementById('tbody-' + et);
+  if (!tbody) return;
+  let visible = 0;
+  tbody.querySelectorAll('tr').forEach(tr => {
+    const match = tr.textContent.toLowerCase().includes(q);
+    tr.classList.toggle('hidden', !match);
+    if (match) visible++;
+  });
+  const footer = document.getElementById('footer-' + et);
+  if (footer) {
+    const total = groupedData[et] ? groupedData[et].length : 0;
+    footer.textContent = `Showing ${visible.toLocaleString()} of ${total.toLocaleString()} rows` + (q ? ` (filtered)` : '');
+  }
+}
+
+// ============================================================
+//  GLOBAL SEARCH
+// ============================================================
+let globalTimeout = null;
+function globalFilter(q) {
+  clearTimeout(globalTimeout);
+  globalTimeout = setTimeout(() => _doGlobalFilter(q), 200);
+}
+function _doGlobalFilter(q) {
+  q = q.toLowerCase().trim();
+
+  for (const et of eventTypes) {
+    const tbody = document.getElementById('tbody-' + et);
+    if (!tbody) continue;
+    const section = document.getElementById('sec-' + et);
+    let visible = 0;
+    tbody.querySelectorAll('tr').forEach(tr => {
+      const match = !q || tr.textContent.toLowerCase().includes(q);
+      tr.classList.toggle('hidden', !match);
+      if (match) visible++;
+    });
+    // Hide entire section if nothing matches
+    if (section) section.style.display = (visible === 0 && q) ? 'none' : '';
+
+    const footer = document.getElementById('footer-' + et);
+    if (footer) {
+      const total = groupedData[et] ? groupedData[et].length : 0;
+      footer.textContent = `Showing ${visible.toLocaleString()} of ${total.toLocaleString()} rows` + (q ? ` (filtered)` : '');
+    }
+
+    // Expand sections that have results when searching
+    if (q && visible > 0 && section) section.classList.remove('collapsed');
+  }
+}
+
+function collapseAll() {
+  document.querySelectorAll('.et-section').forEach(s => s.classList.add('collapsed'));
+}
+function expandAll() {
+  document.querySelectorAll('.et-section').forEach(s => s.classList.remove('collapsed'));
+}
+
+// ============================================================
+//  BACK TO TOP
+// ============================================================
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('backToTop');
+  if (!btn) return;
+  btn.classList.toggle('visible', window.scrollY > 300);
+});
+
+// ============================================================
+//  INIT
+// ============================================================
+setupFileInputs();
+</script>
+
+<style>
+#backToTop {
+  position: fixed;
+  bottom: 32px;
+  right: 8px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--border2);
+  background: var(--card);
+  color: var(--accent);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity .2s, transform .2s, background .15s, border-color .15s;
+  pointer-events: none;
+  z-index: 500;
+  box-shadow: 0 4px 16px rgba(0,0,0,.4);
+}
+#backToTop.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+#backToTop:hover {
+  background: rgba(0,212,255,.1);
+  border-color: var(--accent);
+}
+</style>
+<button id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">↑</button>
+</body>
+</html>
